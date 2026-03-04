@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文翻译 - 文档生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+            font-weight: 600;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-center {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .status {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .status.processing {
+            display: block;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status.success {
+            display: block;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            display: block;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #667eea;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .file-info {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .file-info.show {
+            display: block;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .result-card h3 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .download-btn {
+            background: white;
+            color: #667eea;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .task-id {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        footer {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            margin-top: 30px;
+            padding: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .upload-area {
+                padding: 40px 20px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 论文翻译生成器</h1>
+            <p>上传论文，获取专业翻译Word文档</p>
+        </div>
+        
+        <div class="card">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('upload')">📎 上传文件</div>
+                <div class="tab" onclick="switchTab('paste')">📝 粘贴文本</div>
+            </div>
+            
+            <!-- 上传文件 -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">点击或拖拽上传论文文件</div>
+                    <div class="upload-hint">支持 .txt, .doc, .docx, .pdf 格式</div>
+                </div>
+                <input type="file" id="fileInput" accept=".txt,.doc,.docx,.pdf" onchange="handleFileSelect(event)">
+                
+                <div class="file-info" id="fileInfo">
+                    <strong>已选择文件：</strong>
+                    <span id="fileName"></span>
+                    <span id="fileSize"></span>
+                </div>
+            </div>
+            
+            <!-- 粘贴文本 -->
+            <div id="paste-tab" class="tab-content">
+                <div class="form-group">
+                    <label for="content">论文内容</label>
+                    <textarea id="content" placeholder="请在此处粘贴论文内容..."></textarea>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="title">文档标题（可选）</label>
+                <input type="text" id="title" placeholder="输入文档标题，如：论文翻译">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">通知邮箱（可选）</label>
+                <input type="text" id="email" placeholder="翻译完成后通知您">
+            </div>
+            
+            <div class="btn-center">
+                <button class="btn" id="submitBtn" onclick="submitTask()">开始翻译</button>
+            </div>
+            
+            <!-- 状态显示 -->
+            <div class="status processing" id="processingStatus">
+                <div class="spinner"></div>
+                <h3>🔄 正在处理中...</h3>
+                <p>请稍候，正在翻译并生成Word文档</p>
+                <div class="task-id">任务ID: <span id="taskId"></span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    <span id="progressText">0%</span> - 预计需要 2-5 分钟
+                </p>
+                <p style="margin-top: 15px; font-size: 0.85em; color: #888;">
+                    您可以关闭页面，稍后通过任务ID查询结果
+                </p>
+            </div>
+            
+            <div class="status success" id="successStatus">
+                <div class="result-card">
+                    <h3>✅ 翻译完成！</h3>
+                    <p style="margin-bottom: 20px;">您的Word文档已生成</p>
+                    <a href="#" class="download-btn" id="downloadBtn" onclick="downloadFile()">⬇️ 下载文档</a>
+                    <div class="task-id" style="background: rgba(255,255,255,0.2); color: white;">
+                        任务ID: <span id="successTaskId"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status error" id="errorStatus">
+                <h3>❌ 处理失败</h3>
+                <p id="errorMessage">请重试或联系管理员</p>
+            </div>
+        </div>
+        
+        <!-- 查询任务 -->
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">🔍 查询任务状态</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="queryTaskId" placeholder="输入任务ID" style="flex: 1;">
+                <button class="btn" onclick="queryTask()" style="padding: 12px 24px;">查询</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2024 论文翻译生成器 | Powered by Docx Generator</p>
+        </footer>
+    </div>
+    
+    <script>
+        // API基础地址 - 部署后需要修改为实际地址
+        const API_BASE = 'http://106.14.15.241:8080';
+        
+        let currentTaskId = null;
+        let currentFile = null;
+        
+        // 切换标签
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+        
+        // 文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                currentFile = file;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileSize').textContent = ' (' + formatFileSize(file.size) + ')';
+                document.getElementById('fileInfo').classList.add('show');
+            }
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 提交任务
+        async function submitTask() {
+            const title = document.getElementById('title').value;
+            const email = document.getElementById('email').value;
+            const content = document.getElementById('content').value;
+            
+            // 检查是否有内容
+            const activeTab = document.querySelector('.tab-content.active').id;
+            if (activeTab === 'upload-tab' && !currentFile && !content) {
+                alert('请选择文件或粘贴文本');
+                return;
+            }
+            if (activeTab === 'paste-tab' && !content.trim()) {
+                alert('请输入论文内容');
+                return;
+            }
+            
+            // 显示处理中状态
+            document.getElementById('processingStatus').classList.add('processing');
+            document.getElementById('submitBtn').disabled = true;
+            
+            try {
+                const formData = new FormData();
+                if (currentFile) {
+                    formData.append('file', currentFile);
+                }
+                formData.append('title', title || '论文翻译');
+                formData.append('email', email);
+                formData.append('content', content);
+                
+                const response = await fetch(API_BASE + '/api/submit', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentTaskId = data.task_id;
+                    document.getElementById('taskId').textContent = currentTaskId;
+                    startProgressCheck();
+                } else {
+                    showError(data.message || '提交失败');
+                }
+            } catch (error) {
+                showError('网络错误，请稍后重试');
+                console.error(error);
+            }
+        }
+        
+        // 开始进度检查
+        function startProgressCheck() {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            let progress = 0;
+            
+            // 模拟进度
+            const interval = setInterval(() => {
+                progress += Math.random() * 5;
+                if (progress > 95) progress = 95;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = Math.floor(progress) + '%';
+            }, 2000);
+            
+            // 轮询任务状态
+            const checkInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(API_BASE + '/api/status/' + currentTaskId);
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(interval);
+                        clearInterval(checkInterval);
+                        progressFill.style.width = '100%';
+                        progressText.textContent = '100%';
+                        showSuccess();
+                    } else if (data.status === 'failed') {
+                        clearInterval(interval);
+                        clearInterval(checkInterval);
+                        showError(data.message || '处理失败');
+                    }
+                } catch (error) {
+                    console.error('查询失败:', error);
+                }
+            }, 5000);
+        }
+        
+        // 显示成功
+        function showSuccess() {
+            document.getElementById('processingStatus').classList.remove('processing');
+            document.getElementById('successStatus').classList.add('success');
+            document.getElementById('successTaskId').textContent = currentTaskId;
+            document.getElementById('submitBtn').disabled = false;
+        }
+        
+        // 显示错误
+        function showError(message) {
+            document.getElementById('processingStatus').classList.remove('processing');
+            document.getElementById('errorStatus').classList.add('error');
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('submitBtn').disabled = false;
+        }
+        
+        // 下载文件
+        function downloadFile() {
+            if (currentTaskId) {
+                window.open(API_BASE + '/api/download/' + currentTaskId, '_blank');
+            }
+        }
+        
+        // 查询任务
+        async function queryTask() {
+            const taskId = document.getElementById('queryTaskId').value.trim();
+            if (!taskId) {
+                alert('请输入任务ID');
+                return;
+            }
+            
+            currentTaskId = taskId;
+            
+            try {
+                const response = await fetch(API_BASE + '/api/status/' + taskId);
+                const data = await response.json();
+                
+                if (data.status === 'completed') {
+                    showSuccess();
+                } else if (data.status === 'processing') {
+                    document.getElementById('processingStatus').classList.add('processing');
+                    document.getElementById('taskId').textContent = taskId;
+                    startProgressCheck();
+                } else if (data.status === 'failed') {
+                    showError(data.message || '处理失败');
+                } else {
+                    alert('任务不存在或已过期');
+                }
+            } catch (error) {
+                alert('查询失败，请稍后重试');
+            }
+        }
+        
+        // 拖拽上传支持
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                currentFile = files[0];
+                document.getElementById('fileName').textContent = currentFile.name;
+                document.getElementById('fileSize').textContent = ' (' + formatFileSize(currentFile.size) + ')';
+                document.getElementById('fileInfo').classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>
